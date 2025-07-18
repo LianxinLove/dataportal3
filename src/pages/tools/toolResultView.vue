@@ -48,7 +48,11 @@
               :loading="tableLoading"
             >
             </TableComponents>
-            <scatter v-if="plotDataShow" :data="plotData" />
+            <scatter
+              v-if="plotDataShow && plotData.type == 'plotly'"
+              :data="plotData"
+            />
+            <img v-if="plotDataShow && plotData.type == 'img'" :src="'data:image/png;base64,' + plotData.data" height="100%">
           </v-card>
         </v-col>
       </v-row>
