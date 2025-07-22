@@ -154,11 +154,14 @@ import { analysisApi, projectApi } from "@/api";
 import { useSnackbarStore } from "@/stores/snackbar.js";
 import { useConfirmDialog } from "@/stores/confirmDialog.js";
 import { useAnalysisStore } from "@/stores/analysis";
+import { useOverlayStore } from "@/stores/overlay";
 
 // file-saver
 import { saveAs } from "file-saver";
 const snackbar = useSnackbarStore();
 const confirmDialog = useConfirmDialog();
+
+const overlayStore = useOverlayStore();
 
 const analysisStore = useAnalysisStore();
 // 搜索输入
@@ -262,7 +265,7 @@ const deleteAnalysis = async (item) => {
 };
 // 跳转页面
 const changePage = (item, page) => {
-  console.log(item);
+  overlayStore.openOverlay(true);
   analysisStore.setAnalysis({
     analysis: item,
   });
@@ -270,6 +273,9 @@ const changePage = (item, page) => {
   router.push({
     path: "/analysis/" + page,
   });
+  setTimeout(() => {
+    overlayStore.openOverlay(false);
+  }, 300);
 };
 // 创建项目
 const createAnalysis = (data) => {

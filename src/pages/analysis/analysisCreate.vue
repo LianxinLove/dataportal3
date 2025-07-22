@@ -187,11 +187,13 @@ onConnect((event) => {
 });
 // node id
 const nodeId = ref(0);
-if (nodes.value[0]) {
-  nodeId.value = nodes.value[nodes.value.length - 1].id;
-}
+
 // get id
 const getId = () => {
+  if (nodes.value[0]) {
+    nodeId.value = nodes.value[nodes.value.length - 1].id;
+    console.log(nodeId.value);
+  }
   let num = parseInt(nodeId.value);
   num++;
   return "0000" + num;
@@ -343,19 +345,32 @@ const getWorkflowTools = async () => {
   open.value = navItems.value.map((item) => item.name);
 };
 const submit = async () => {
-  try {
-    const response = analysisApi.createAnalysis(
-      analysisStore.project.projectId,
-      {
+  if (analysisStore.analysis) {
+    try {
+      const response = analysisApi.updateAnalysis(analysisStore.analysis.id, {
         name: workflowname.value,
         node: nodes.value,
         edge: edges.value,
-      }
-    );
-    router.push({
-      path: "/analysis",
-    });
-  } catch {}
+      });
+      router.push({
+        path: "/analysis",
+      });
+    } catch {}
+  } else {
+    try {
+      const response = analysisApi.createAnalysis(
+        analysisStore.project.projectId,
+        {
+          name: workflowname.value,
+          node: nodes.value,
+          edge: edges.value,
+        }
+      );
+      router.push({
+        path: "/analysis",
+      });
+    } catch {}
+  }
 };
 const getAnalysisDetail = async () => {
   const response = await analysisApi.getAnalysisInfo(analysisData.value.id);

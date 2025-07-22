@@ -18,7 +18,7 @@
     <v-main class="mt-3">
       <h3 class="selectNodeName" v-if="selectNodeData.label">
         Result Chart --- {{ selectNodeData.label }}
-        <v-btn
+        <!-- <v-btn
           prepend-icon="mdi-download"
           density="default"
           color="primary"
@@ -27,7 +27,7 @@
           class="saveBtn"
         >
           save as result
-        </v-btn>
+        </v-btn> -->
       </h3>
       <h3 class="selectNodeName" v-else>
         No nodes selected. Select a specific node.
@@ -162,6 +162,10 @@ const getAnalysisDetail = async () => {
 };
 
 const selectNode = async (node) => {
+  console.log(node);
+  if (node.status != "success") {
+    return;
+  }
   type.value = "";
   tableColumns.value = [];
   data.value = [];
@@ -169,7 +173,6 @@ const selectNode = async (node) => {
   tableLoading.value = true;
   contentShow.value = true;
   selectNodeData.value = node;
-  console.log(node);
   if (selectNodeData.value.plotType == "table") {
     const form = {
       projectId: analysisStore.analysis.project.id,

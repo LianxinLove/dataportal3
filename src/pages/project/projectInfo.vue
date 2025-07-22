@@ -273,20 +273,6 @@
         </v-chip>
       </div>
     </v-main>
-    <v-main v-if="!edit">
-      <div class="submitButton">
-        <v-btn
-          color="white"
-          @click="(edit = true), getExp(), getProject()"
-          class="mt-4 mr-4"
-        >
-          Cancel
-        </v-btn>
-        <v-btn color="primary" @click="submitProject" class="mt-4">
-          Submit Project
-        </v-btn>
-      </div>
-    </v-main>
     <v-main class="mt-6">
       <h3>Workflow</h3>
       <div class="search mt-3">
@@ -314,7 +300,6 @@
         :loading="loading"
         fixed-header
         hide-default-footer
-        height="700px"
         class="tabel"
       >
         <template v-slot:[`item.projectId`]="{ item }">
@@ -402,9 +387,23 @@
         dismissible
         :style="{ textAlign: 'center' }"
       >
-        <p>No projects found. Please create a new project.</p>
+        <p>No workflow found. Please create a new workflow.</p>
         <v-btn class="mt-4" color="primary" @click="navigateTo">Create</v-btn>
       </v-alert>
+    </v-main>
+    <v-main v-if="!edit">
+      <div class="submitButton">
+        <v-btn
+          color="white"
+          @click="(edit = true), getExp(), getProject()"
+          class="mt-4 mr-4"
+        >
+          Cancel
+        </v-btn>
+        <v-btn color="primary" @click="submitProject" class="mt-4">
+          Submit Project
+        </v-btn>
+      </div>
     </v-main>
 
     <!-- 弹出框 -->
@@ -656,6 +655,12 @@ const tableColumns = ref([
     filterData: [{ data: "" }],
   },
 ]);
+
+const navigateTo = () => {
+  router.push({
+    path: "/analysis/analysisCreate",
+  });
+};
 
 // 获取analysis列表
 const getAnalysisList = async () => {
@@ -948,6 +953,7 @@ getAnalysisList();
     margin-bottom: 16px;
   }
   .tag {
+    width: 100%;
     h3 {
       display: flex;
       flex-wrap: nowrap;
@@ -983,13 +989,16 @@ getAnalysisList();
   }
   .template {
     display: flex;
-    align-items: top;
-    gap: 10px;
+    align-items: center;
     flex-wrap: wrap;
-    .tag {
-      width: 100%;
-    }
+    gap: 10px;
     button {
+      height: 40px !important;
+    }
+    .btn {
+      width: 40px !important;
+    }
+    .v-input {
       height: 40px !important;
     }
   }

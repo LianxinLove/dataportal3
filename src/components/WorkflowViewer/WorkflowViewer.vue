@@ -200,8 +200,7 @@ const renderWorkflow = () => {
       const statusColors = {
         success: "#4CAF50",
         failed: "#F44336",
-        upstream_failed: "#F44336",
-        processing: "#FFC107",
+        running: "#FFC107",
       };
       const nodeColor = statusColors[node.status] || "#4CAF50";
       // 节点背景（调整了坐标计算方式）

@@ -488,6 +488,8 @@ const fileClick = (item) => {
         folder: item.id,
         file: {},
       };
+    } else {
+      fileTemplate.value.params.folder = item.id;
     }
   }
   // Handle file click logic here
