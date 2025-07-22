@@ -2,6 +2,14 @@
   <v-toolbar color="primary">
     <v-toolbar-title
       >Create Workflow
+      <div class="workflowname">
+        <v-text-field
+          placeholder="Workflow Name"
+          density="compact"
+          :width="300"
+          v-model="workflowname"
+        ></v-text-field>
+      </div>
       <v-btn variant="text" @click="submit">
         <v-icon>mdi-upload</v-icon>
         submit
@@ -83,9 +91,11 @@
       </v-col>
       <div class="form">
         <CustomForm
+          v-if="nodeData.name"
           :formData="formData"
           :fileData="fileData"
           :formName="formName"
+          :msg="msg"
         ></CustomForm>
       </div>
     </v-row>
@@ -97,6 +107,8 @@ import { ref, onMounted, inject } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAppStore } from "@/stores/app";
 import { useConfirmDialog } from "@/stores/confirmDialog.js";
+import { useAnalysisStore } from "@/stores/analysis";
+
 import {
   VueFlow,
   useVueFlow,
@@ -120,6 +132,8 @@ import "@/components/flow/css/resizer.css";
 // import { useDialog } from "vuetify-dialog";
 // const dialog = useDialog();
 const confirmDialog = useConfirmDialog();
+const analysisStore = useAnalysisStore();
+
 // flow
 const {
   onConnect,
@@ -145,11 +159,15 @@ const open = ref([]);
 const nodes = ref([]);
 const edges = ref([]);
 const dragNodeData = ref([]);
-const nodeData = ref();
+const nodeData = ref({});
 const selectData = ref({});
 
 const formData = ref();
 const formName = ref();
+const msg = ref([]);
+const analysisData = ref(analysisStore.analysis);
+
+const workflowname = ref("workflow");
 
 // 拖拽函数
 const onDragStart = (event, type, tool) => {
@@ -250,7 +268,11 @@ onNodeClick((event) => {
     type: "node",
     id: event.node.id,
   };
+  msg.value = nodeData.value.msg;
   formData.value = nodeData.value.subplots;
+  formName.value = {
+    name: nodeData.value.name,
+  };
   console.log(nodeData.value);
 });
 // delete method
@@ -301,7 +323,6 @@ const deleteNode = async (data) => {
     text: `Are you sure you want to delete ${data.name}?`,
   });
   if (confirmed) {
-    console.log(data);
     nodes.value = nodes.value.filter((res) => {
       return res.id != selectData.value.id;
     });
@@ -315,19 +336,43 @@ const deleteNode = async (data) => {
   }
 };
 const getWorkflowTools = async () => {
-  const response = await analysisApi.getWorkflowTools();
+  const response = await analysisApi.getWorkflowTools(
+    analysisStore.project.projectId
+  );
   navItems.value = response;
   open.value = navItems.value.map((item) => item.name);
 };
 const submit = async () => {
   try {
-    const response = analysisApi.createAnalysis({
-      node: nodes.value,
-      edge: edges.value,
+    const response = analysisApi.createAnalysis(
+      analysisStore.project.projectId,
+      {
+        name: workflowname.value,
+        node: nodes.value,
+        edge: edges.value,
+      }
+    );
+    router.push({
+      path: "/analysis",
     });
   } catch {}
 };
+const getAnalysisDetail = async () => {
+  const response = await analysisApi.getAnalysisInfo(analysisData.value.id);
+  console.log(response);
+  if (response) {
+    nodes.value = response.node;
+    edges.value = response.edge;
+    workflowname.value = response.name;
+  }
+};
 onMounted(() => {
+  console.log(analysisData.value);
+  setTimeout(() => {
+    if (analysisData.value.id) {
+      getAnalysisDetail();
+    }
+  }, 300);
   // 初始化导航状态
   getWorkflowTools();
 });
@@ -345,6 +390,28 @@ onMounted(() => {
     height: 770px;
   }
 }
+:deep(.v-toolbar__content) {
+  height: 80px !important;
+}
+:deep(.v-toolbar-title__placeholder) {
+  height: 80px;
+  line-height: 80px;
+  align-items: center;
+  display: flex;
+  .workflowname {
+    width: 300px !important;
+    margin-right: 50px;
+  }
+  .v-input {
+    height: 40px;
+    width: 300px !important;
+    margin-left: 20px;
+  }
+  .v-input__control {
+    width: 300px !important;
+  }
+}
+
 .form {
   width: 300px;
   padding: 16px;
@@ -353,6 +420,7 @@ onMounted(() => {
   border: 1px solid #ccc;
   border-radius: 4px;
   height: 700px !important;
+  overflow: auto;
 }
 .nav-col {
   padding: 16px;

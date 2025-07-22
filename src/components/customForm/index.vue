@@ -1,12 +1,35 @@
 <template>
   <v-container>
     <v-form ref="form" v-model="valid" lazy-validation>
+      <v-expansion-panels v-if="msg">
+        <v-expansion-panel>
+          <v-expansion-panel-title
+            collapse-icon="mdi-information"
+            expand-icon="mdi-information"
+          >
+            <v-text-field
+              variant="outlined"
+              density="compact"
+              label="Name"
+              v-model="formName.name"
+            ></v-text-field>
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <p v-for="(item, i) in msg" :key="i" :class="item.type" class="msg">
+              <span class="title">{{ item.title }}</span
+              >{{ item.msg }}
+            </p>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
       <v-text-field
+        v-else
         variant="outlined"
         density="compact"
         label="Name"
         v-model="formName.name"
       ></v-text-field>
+
       <!-- <h3>File</h3> -->
       <!-- <template v-for="(data, index) in fileData" :key="index">
         <div class="template mt-3 mb-8">
@@ -75,6 +98,13 @@
               </p>
             </div>
           </template>
+          <v-text-field
+            v-if="data.type === 'text'"
+            variant="outlined"
+            density="compact"
+            label="Name"
+            v-model="data.value"
+          ></v-text-field>
           <v-select
             v-if="data.type === 'select'"
             density="compact"
@@ -328,6 +358,10 @@ const props = defineProps({
     type: String,
     default: "customForm",
   },
+  msg: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const filter = ref([]);
@@ -413,6 +447,13 @@ const logSelection = (selectedItems) => {
 // 选择文件方法
 const selectFile = () => {
   console.log(selected.value);
+  if (selected.value.length === 0) {
+    snackbar.openSnackbar({
+      text: "Please select a file.",
+      color: "warning",
+    });
+    return;
+  }
   fileTemplate.value.params.file = selected.value[0];
   console.log(fileTemplate.value);
   tableDialog.value = false;
@@ -566,6 +607,24 @@ watch(
 <style lang="less" scoped>
 .dangerText {
   color: red;
+}
+.v-expansion-panel-title {
+  display: flex;
+  gap: 10px;
+  .v-input {
+    height: 40px;
+  }
+}
+.msg {
+  line-height: 30px;
+  .title {
+    font-weight: bold;
+  }
+}
+.info {
+}
+.blue {
+  color: #1867c0;
 }
 .template {
   display: flex;

@@ -35,7 +35,7 @@ export const projectApi = {
   },
   // project 创建时获取metadata文件
   getMetaDataFile(data) {
-    return http.donwloadPost("/projects/create_metadata", data);
+    return http.downloadPost("/projects/create_metadata", data);
   },
   // 创建project
   createProject(data) {
@@ -88,7 +88,7 @@ export const dataApi = {
   },
   // 下载文件
   downloadFile(id, name) {
-    return http.download(`/library/${id}/${name}?file=true`);
+    return http.get(`/library/${id}/${name}?file=true`);
   },
 };
 
@@ -122,30 +122,30 @@ export const toolsApi = {
 
 // analysis相关API
 export const analysisApi = {
-  getAnalysisList() {
-    return http.get("/analyses");
+  getAnalysisList(id) {
+    return http.get("/analysis/?projectID=" + id);
   },
-  getAnalysisDetail(id) {
-    return http.get(`/analysis/${id}`);
-  },
-  createAnalysis(data) {
-    return http.post("/analysis", data);
+  // getAnalysisDetail(id) {
+  //   return http.get(`/analysis/${id}`);
+  // },
+  createAnalysis(id, data) {
+    return http.post(`/analysis/?projectID=${id}`, data);
   },
   updateAnalysis(id, data) {
     return http.put(`/analysis/${id}`, data);
   },
   deleteAnalysis(id) {
-    return http.delete(`/workflows/${id}`);
+    return http.delete(`/analysis/${id}`);
   },
   // downloadResult
   downloadAnalysis(workflowId, projectId) {
     return http.download(
-      `/workflows/${workflowId}/download?projectId=${projectId}&0=download`
+      `/analysis/${workflowId}/download?projectId=${projectId}&0=download`
     );
   },
   // get analysis detail
   getAnalysisDetail(workflowId, projectId) {
-    return http.get(`/workflows/${workflowId}`, projectId);
+    return http.get(`/analysis/${workflowId}`, projectId);
   },
   getAnalysisTableName(id, data) {
     return http.get("/taskNode/" + id + "/tableName", data);
@@ -156,8 +156,11 @@ export const analysisApi = {
   getAnalisisPlotData(id, data) {
     return http.get("/taskNode/" + id + "/plot", data);
   },
-  getWorkflowTools() {
-    return http.get("/workflow/tools");
+  getWorkflowTools(projectId) {
+    return http.get(`/workflow/tools?projectID=${projectId}`);
+  },
+  getAnalysisInfo(id) {
+    return http.get(`/analysis_raw/${id}`);
   },
 };
 // results

@@ -162,7 +162,7 @@ const http = {
       // isDownload: true, // 特殊标识，避免响应拦截器处理
     });
   },
-  donwloadPost(url, data) {
+  downloadPost(url, data) {
     return service({
       url,
       method: "post",

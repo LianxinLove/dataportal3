@@ -293,6 +293,7 @@ const getFileContent = (data) => {
 // 文件下载
 const downloadFile = async (data) => {
   const response = await dataApi.downloadFile(folderData.value.id, data.name);
+  console.log(response)
   window.open(
     import.meta.env.VITE_API_BASE_URL + "/library_download/" + response.token
   );

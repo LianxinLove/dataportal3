@@ -72,9 +72,9 @@ const getCustomWorkflowDetailMethod = async () => {
 const checkFile = () => {
   let fileStatus = true;
   formData.value.forEach((item) => {
-    if (!item.optional && !item.params && item.type == 'upload_files') {
+    if (!item.optional && !item.params && item.type == "upload_files") {
       snackbar.openSnackbar({
-        text: `${item.file.split(".")[0]} is optional, but not selected.`,
+        text: `${item.file.split(".")[0]} is not optional, but not selected.`,
         color: "warning",
       });
       fileStatus = false;
@@ -85,9 +85,9 @@ const checkFile = () => {
 };
 const submit = async (data) => {
   // 提交表单数据
-  overlayStore.openOverlay(true);
   if (checkFile()) {
     try {
+      overlayStore.openOverlay(true);
       const response = await toolsApi.createTemplateWorkflow({
         name: formName.value.name,
         // inputs: fileData.value,
@@ -103,9 +103,11 @@ const submit = async (data) => {
         path: "/tools/toolResult",
       });
     } catch (error) {
+      overlayStore.openOverlay(false);
       console.error("提交失败:", error);
     }
   }
+  overlayStore.openOverlay(false);
   console.log("提交的数据:", data);
 };
 getCustomWorkflowDetailMethod();

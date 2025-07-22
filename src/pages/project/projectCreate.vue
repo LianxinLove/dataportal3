@@ -12,25 +12,30 @@
     </v-main>
     <v-main class="mt-3">
       <h3 class="mb-3">Information</h3>
-      <v-text-field
-        class="custom-disabled"
-        density="compact"
-        label="Project Name"
-        :variant="variant"
-        v-model="project.projectName"
-      ></v-text-field>
-      <v-text-field
-        density="compact"
-        label="DOI"
-        :variant="variant"
-        v-model="project.DOI"
-      ></v-text-field>
-      <v-textarea
-        density="compact"
-        label="Project Description"
-        :variant="variant"
-        v-model="project.projectDescription"
-      ></v-textarea>
+      <v-form @submit.prevent="submitProject" ref="form">
+        <v-text-field
+          class="custom-disabled"
+          density="compact"
+          label="Project Name"
+          :variant="variant"
+          required
+          :rules="[rules.required]"
+          v-model="project.projectName"
+        ></v-text-field>
+        <v-text-field
+          density="compact"
+          label="DOI"
+          :variant="variant"
+          v-model="project.DOI"
+        ></v-text-field>
+        <v-textarea
+          density="compact"
+          label="Project Description"
+          :variant="variant"
+          rows="1"
+          v-model="project.projectDescription"
+        ></v-textarea>
+      </v-form>
     </v-main>
     <v-main class="mt-6 tag">
       <h3>
@@ -50,12 +55,12 @@
             label="Upload"
             variant="outlined"
             @change="onTemplateFileChange"
-            v-model="file"
+            v-model="expfile"
             hide-details
             class="file-input"
           ></v-file-input>
         </v-btn>
-        <v-btn class="getTemplate" color="primary" @click="getMetaDataFile">
+        <v-btn class="getTemplate" color="primary" @click="getExpTemplate">
           Get Template
         </v-btn>
       </h3>
@@ -109,6 +114,57 @@
           v-model="file"
           multiple
         ></v-file-input>
+      </div>
+    </v-main>
+    <v-main class="mt-6">
+      <h3>Other Data</h3>
+      <div
+        v-for="(item, index) in otherFiles"
+        :key="index"
+        class="d-flex align-center mt-3 template"
+      >
+        <!-- 文件类型选择 -->
+        <v-select
+          label="Type"
+          :items="['genome', 'transcriptome', 'metabolome', 'other']"
+          variant="outlined"
+          v-model="item.type"
+          density="compact"
+          class="mr-2"
+          :max-width="200"
+        ></v-select>
+
+        <!-- 文件上传 -->
+        <v-file-input
+          label="Upload File"
+          variant="outlined"
+          density="compact"
+          show-size
+          prepend-icon="mdi-upload"
+          v-model="item.file"
+          @change="onOtherFileChange(item)"
+          class="mr-2"
+        ></v-file-input>
+
+        <!-- 加号按钮 (仅最后一行显示) -->
+        <v-btn
+          v-if="index === otherFiles.length - 1"
+          icon="mdi-plus"
+          variant="tonal"
+          color="primary"
+          @click="addRow"
+          class="mr-2 btn"
+        ></v-btn>
+
+        <!-- 减号按钮 (首行不显示) -->
+        <v-btn
+          v-if="index > 0"
+          icon="mdi-minus"
+          variant="tonal"
+          color="error"
+          class="btn"
+          @click="removeRow(index)"
+        ></v-btn>
       </div>
     </v-main>
     <v-main>
@@ -230,6 +286,11 @@ const overlayStore = useOverlayStore();
 
 const router = useRouter();
 
+const form = ref(null);
+const rules = {
+  required: (value) => !!value || "Required",
+};
+
 const projectStore = useProjectStore();
 const project = ref({});
 const filter = ref([]);
@@ -243,6 +304,8 @@ const selectedItems = ref([]);
 const selectedList = ref([]);
 const selectedItemsEXP = ref([]);
 const file = ref([]);
+const expfile = ref([]);
+const otherFiles = ref([{ type: "other", file: null, value: "" }]);
 const expsList = ref([]);
 const sourceExpsList = ref([]);
 const dialog = ref(false);
@@ -377,6 +440,15 @@ const tableColumns = ref([
   },
 ]);
 
+// 添加新行
+const addRow = () => {
+  otherFiles.value.push({ type: "other", file: null, value: "" });
+};
+
+// 删除当前行
+const removeRow = (index) => {
+  otherFiles.value.splice(index, 1);
+};
 // 获取exp列表
 const getExp = async () => {
   firmianaLoading.value = true;
@@ -446,29 +518,43 @@ const handleSelectionEXP = (selection) => {
 // 清除选择
 const onFileChange = async () => {
   // FirmianaTableRef.value.componentSelectList = [];
-  overlayStore.openOverlay(true);
   temp_locale.value = [];
   try {
+    overlayStore.openOverlay(true);
     const uploadPromises = file.value.map((res) => {
       const formData = new FormData();
       formData.append("file", res);
       return basicApi.uploadTemplateFile(formData);
     });
     const responses = await Promise.all(uploadPromises);
-    temp_locale.value = responses.map((r) => r.temp_locale);
+    temp_locale.value = responses.map((r) => r);
     console.log(temp_locale.value);
-    file.value = [];
     overlayStore.openOverlay(false);
-  } catch {}
+  } catch {
+    overlayStore.openOverlay(false);
+  }
+};
+const onOtherFileChange = async (item) => {
+  try {
+    overlayStore.openOverlay(true);
+    const formData = new FormData();
+    formData.append("file", item.file);
+    const response = await basicApi.uploadTemplateFile(formData);
+    item.value = response;
+    overlayStore.openOverlay(false);
+  } catch {
+    overlayStore.openOverlay(false);
+  }
 };
 const onTemplateFileChange = async () => {
   overlayStore.openOverlay(true);
+  console.log(expfile.value);
   try {
     selectedItemsEXP.value = [];
     selectedItems.value = [];
     expsList.value = [];
     const formData = new FormData();
-    formData.append("file", file.value);
+    formData.append("file", expfile.value);
     formData.append(
       "token_type",
       JSON.parse(localStorage.getItem("user")).firmianaToken.token_type
@@ -485,7 +571,9 @@ const onTemplateFileChange = async () => {
     });
     expdata.value = response;
     overlayStore.openOverlay(false);
-  } catch {}
+  } catch {
+    overlayStore.openOverlay(false);
+  }
 };
 // 筛选
 const filterChange = (filterData) => {
@@ -524,8 +612,25 @@ const tagClose = (res) => {
     return r.expname != res;
   });
 };
+const getExpTemplate = () => {
+  window.open(
+    "https://phenomics.fudan.edu.cn/firmiana/DP/static/excel/Exps.xlsx"
+  );
+};
 // 提交信息
 const submitProject = async () => {
+  const { valid } = await form.value.validate();
+  if (!valid) return;
+  overlayStore.openOverlay(true);
+  let arr = [];
+  otherFiles.value.forEach((item) => {
+    if (item.file) {
+      arr.push({
+        type: item.type,
+        value: item.value,
+      });
+    }
+  });
   const data = {
     projectInfo: {
       iproteomeToken: JSON.parse(localStorage.getItem("user")).firmianaToken,
@@ -534,17 +639,19 @@ const submitProject = async () => {
       projectName: project.value.projectName,
       exps: expsList.value,
       metadata: temp_locale.value,
+      otherFiles: arr,
     },
   };
-  const response = await projectApi.createProject(data);
-  snackbar.openSnackbar({
-    text: "Success",
-    color: "success",
-  });
-  router.push({
-    path: "/project",
-  });
   try {
+    const response = await projectApi.createProject(data);
+    snackbar.openSnackbar({
+      text: "Success",
+      color: "success",
+    });
+    overlayStore.openOverlay(false);
+    router.push({
+      path: "/project",
+    });
     // expsList.value = [...new Set([...expsList.value, ...selectedItems.value])];
   } catch (error) {
     console.error("Error fetching project data:", error);
@@ -602,9 +709,15 @@ getExp();
   }
   .template {
     display: flex;
-    align-items: top;
+    align-items: center;
     gap: 10px;
     button {
+      height: 40px !important;
+    }
+    .btn {
+      width: 40px !important;
+    }
+    .v-input {
       height: 40px !important;
     }
   }

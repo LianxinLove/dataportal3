@@ -7,6 +7,7 @@ export const useAnalysisStore = defineStore("analysis", {
     analysis: {},
     project: {},
     workflow: {},
+    searchData: "",
   }),
   actions: {
     //
@@ -18,6 +19,9 @@ export const useAnalysisStore = defineStore("analysis", {
     },
     setWorkflow(payload) {
       this.workflow = payload.workflow;
+    },
+    setSearchData(payload) {
+      this.searchData = payload.searchData;
     },
   },
   persist: true, // 使用持久化插件（需安装 pinia-plugin-persistedstate）

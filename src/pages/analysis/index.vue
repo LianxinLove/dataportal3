@@ -80,7 +80,7 @@
                       color="primary"
                       size="small"
                       v-bind="props"
-                      @click="changePage(item, 'analysisModify')"
+                      @click="changePage(item, 'analysisCreate')"
                     ></v-btn>
                   </template>
                 </v-tooltip>
@@ -117,7 +117,7 @@
             dismissible
             :style="{ textAlign: 'center' }"
           >
-            <p>No projects found. Please create a new project.</p>
+            <p>No workflow found. Please create a new workflow.</p>
             <v-btn class="mt-4" color="primary" @click="navigateTo"
               >Create</v-btn
             >
@@ -135,7 +135,7 @@
       <v-list>
         <template v-for="(item, index) in navItems" :key="index">
           <v-list-item
-            :value="item.name"
+            :value="item.id"
             :title="item.name"
             @click="createAnalysis(item)"
           ></v-list-item>
@@ -146,7 +146,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 
 import { useRouter } from "vue-router";
 import { analysisApi, projectApi } from "@/api";
@@ -202,7 +202,7 @@ const getProjectList = async () => {
 // 获取analysis列表
 const getAnalysisList = async () => {
   try {
-    const response = await analysisApi.getAnalysisList();
+    const response = await analysisApi.getAnalysisList("");
     sourceData.value = response;
     desserts.value = response;
   } catch (error) {
@@ -273,6 +273,8 @@ const changePage = (item, page) => {
 };
 // 创建项目
 const createAnalysis = (data) => {
+  console.log(data);
+  analysisStore.setAnalysis({});
   analysisStore.setProject({
     project: data,
   });
@@ -283,8 +285,10 @@ const createAnalysis = (data) => {
 const navigateTo = () => {
   drawer.value = true;
 };
-getAnalysisList();
-getProjectList();
+onMounted(() => {
+  getAnalysisList();
+  getProjectList();
+});
 </script>
 
 <style lang="less" scoped>

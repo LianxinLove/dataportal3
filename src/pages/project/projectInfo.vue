@@ -42,6 +42,7 @@
         density="compact"
         label="Project Description"
         :variant="variant"
+        rows="1"
         v-model="project.projectDescription"
       ></v-textarea>
     </v-main>
@@ -63,12 +64,12 @@
               label="Upload"
               variant="outlined"
               @change="onTemplateFileChange"
-              v-model="file"
+              v-model="expfile"
               hide-details
               class="file-input"
             ></v-file-input>
           </v-btn>
-          <v-btn class="getTemplate" color="primary" @click="getMetaDataFile">
+          <v-btn class="getTemplate" color="primary" @click="getExpTemplate">
             Get Template
           </v-btn>
           <!-- <v-btn
@@ -154,6 +155,19 @@
     <v-main class="mt-6">
       <h3>Meta Data</h3>
       <div class="template mt-3" v-if="!edit">
+        <div class="tag">
+          <v-chip
+            v-for="(item, index) in project.metadata"
+            class="ma-2"
+            color="cyan"
+            label
+            :closable="true"
+            :key="index"
+            @click="getTagInfo(item)"
+          >
+            {{ item.name }}
+          </v-chip>
+        </div>
         <v-btn color="primary" @click="getMetaDataFile"> Get Template </v-btn>
         <v-file-input
           label="Upload File"
@@ -166,20 +180,99 @@
           multiple
         ></v-file-input>
       </div>
-    </v-main>
-    <!-- <v-main class="mt-6">
-      <h3>File</h3>
-      <div v-if="!edit">
-        <v-file-input
-          label="Upload File"
-          variant="outlined"
-          density="compact"
-          show-size
-          prepend-icon="mdi-upload"
-          @change="onFileChange"
-        ></v-file-input>
+      <div v-else>
+        <v-chip
+          v-for="(item, index) in project.metadata"
+          class="ma-2"
+          color="cyan"
+          label
+          :key="index"
+          @click="getTagInfo(item)"
+        >
+          {{ item.name }}
+        </v-chip>
       </div>
-    </v-main> -->
+    </v-main>
+    <v-main class="mt-6">
+      <h3>Other Data</h3>
+
+      <div v-if="!edit">
+        <div class="tag">
+          <v-chip
+            v-for="(item, index) in project.otherFiles"
+            class="ma-2"
+            color="cyan"
+            label
+            :closable="true"
+            :key="index"
+            @click="getTagInfo(item)"
+          >
+            <span>{{ item.type }} : {{ item.name }}</span>
+          </v-chip>
+        </div>
+        <div
+          v-for="(item, index) in otherFiles"
+          :key="index"
+          class="d-flex align-center mt-3 template"
+        >
+          <!-- 文件类型选择 -->
+          <v-select
+            label="Type"
+            :items="['genome', 'transcriptome', 'metabolome', 'other']"
+            variant="outlined"
+            v-model="item.type"
+            density="compact"
+            class="mr-2"
+            :max-width="200"
+          ></v-select>
+
+          <!-- 文件上传 -->
+          <v-file-input
+            label="Upload File"
+            variant="outlined"
+            density="compact"
+            show-size
+            prepend-icon="mdi-upload"
+            v-model="item.file"
+            @change="onOtherFileChange(item)"
+            class="mr-2"
+          ></v-file-input>
+
+          <!-- 加号按钮 (仅最后一行显示) -->
+          <v-btn
+            v-if="index === otherFiles.length - 1"
+            icon="mdi-plus"
+            variant="tonal"
+            color="primary"
+            @click="addRow"
+            class="mr-2 btn"
+          ></v-btn>
+
+          <!-- 减号按钮 (首行不显示) -->
+          <v-btn
+            v-if="index > 0"
+            icon="mdi-minus"
+            variant="tonal"
+            color="error"
+            class="btn"
+            @click="removeRow(index)"
+          ></v-btn>
+        </div>
+      </div>
+
+      <div v-else>
+        <v-chip
+          v-for="(item, index) in project.otherFiles"
+          class="ma-2"
+          color="cyan"
+          label
+          :key="index"
+          @click="getTagInfo(item)"
+        >
+          <span>{{ item.type }} : {{ item.name }}</span>
+        </v-chip>
+      </div>
+    </v-main>
     <v-main v-if="!edit">
       <div class="submitButton">
         <v-btn
@@ -194,42 +287,129 @@
         </v-btn>
       </div>
     </v-main>
+    <v-main class="mt-6">
+      <h3>Workflow</h3>
+      <div class="search mt-3">
+        <v-text-field
+          clearable
+          density="compact"
+          v-model="searchInput"
+          label="Search"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          hide-details
+          single-line
+          @input="searchMethod"
+          style="flex: 1"
+        ></v-text-field>
+        <v-btn v-if="desserts.length" color="primary" @click="navigateTo"
+          >Create</v-btn
+        >
+      </div>
+      <v-data-table
+        v-if="desserts.length"
+        :headers="headers"
+        :items="desserts"
+        :items-per-page="-1"
+        :loading="loading"
+        fixed-header
+        hide-default-footer
+        height="700px"
+        class="tabel"
+      >
+        <template v-slot:[`item.projectId`]="{ item }">
+          <span>{{ item.projectId.toString().padStart(6, "0") }}</span>
+        </template>
+        <template v-slot:[`item.status`]="{ item }">
+          <span v-if="item.status === 'success'">
+            <v-icon
+              color="green-darken-2"
+              icon="mdi-check-circle-outline"
+              size="large"
+            ></v-icon>
+          </span>
+          <span v-else-if="item.status === 'failed'">
+            <v-icon
+              color="red-darken-2"
+              icon="mdi-alert-circle-outline"
+              size="large"
+            ></v-icon>
+          </span>
+          <span v-else>
+            <v-icon
+              color="orange-darken-2"
+              icon="mdi-clock-time-eight-outline"
+              size="large"
+            ></v-icon>
+          </span>
+        </template>
+        <template v-slot:[`item.operation`]="{ item }">
+          <div class="buttonGroup">
+            <v-tooltip text="Analysis Result" location="top">
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon="mdi-information-outline"
+                  variant="text"
+                  color="primary"
+                  size="small"
+                  v-bind="props"
+                  @click="changePage(item, 'analysisDetail')"
+                ></v-btn>
+              </template>
+            </v-tooltip>
+            <v-tooltip text="Workflow Modify" location="top">
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon="mdi-pencil"
+                  variant="text"
+                  color="primary"
+                  size="small"
+                  v-bind="props"
+                  @click="changePage(item, 'analysisModify')"
+                ></v-btn>
+              </template>
+            </v-tooltip>
+            <v-tooltip text="Download Result" location="top">
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon="mdi-download"
+                  variant="text"
+                  color="primary"
+                  size="small"
+                  v-bind="props"
+                  @click="downloadAnalysis(item)"
+                ></v-btn>
+              </template>
+            </v-tooltip>
+            <v-tooltip text="Delete Workflow" location="top">
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon="mdi-delete"
+                  variant="text"
+                  color="error"
+                  v-bind="props"
+                  @click="deleteAnalysis(item)"
+                ></v-btn>
+              </template>
+            </v-tooltip>
+          </div>
+        </template>
+      </v-data-table>
+      <v-alert
+        v-if="desserts.length === 0 && !loading"
+        type="warning"
+        class="mt-4"
+        dismissible
+        :style="{ textAlign: 'center' }"
+      >
+        <p>No projects found. Please create a new project.</p>
+        <v-btn class="mt-4" color="primary" @click="navigateTo">Create</v-btn>
+      </v-alert>
+    </v-main>
 
     <!-- 弹出框 -->
     <v-dialog v-model="dialog" width="auto">
-      <v-card title="Tips">
-        <v-card-text>
-          Try to copy exp000001, exp000002 into the input box , Then hit
-          enter.(Please use English comma!)
-        </v-card-text>
-        <div class="dialogContent">
-          <v-text-field variant="outlined" density="compact"></v-text-field>
-          <div title="SUCCESS:">
-            <p>SUCCESS:</p>
-            <v-chip
-              v-for="(item, index) in expsList"
-              class="ma-2"
-              color="cyan"
-              closable
-              label
-              :key="index"
-            >
-              {{ item }}
-            </v-chip>
-          </div>
-          <div title="ERROR:">
-            <p>ERROR:</p>
-            <v-chip
-              v-for="(item, index) in expsList"
-              class="ma-2"
-              color="red"
-              label
-              :key="index"
-            >
-              {{ item }}
-            </v-chip>
-          </div>
-        </div>
+      <v-card :title="fileName">
         <v-card-actions>
           <v-spacer></v-spacer>
 
@@ -289,7 +469,7 @@
 
 <script setup>
 import { ref } from "vue";
-import { projectApi, dataApi } from "@/api";
+import { projectApi, analysisApi } from "@/api";
 
 import { useProjectStore } from "@/stores/project";
 import TableComponents from "@/components/table/index.vue";
@@ -315,6 +495,8 @@ const selectedItems = ref([]);
 const selectedList = ref([]);
 const selectedItemsEXP = ref([]);
 const file = ref([]);
+const expfile = ref([]);
+const otherFiles = ref([{ type: "other", file: null, value: "" }]);
 const expsList = ref([]);
 const sourceExpsList = ref([]);
 const dialog = ref(false);
@@ -324,8 +506,33 @@ const edit = ref(true);
 const variant = ref("underlined");
 const panel = ref(["exps"]);
 const temp_locale = ref();
+const fileName = ref("");
 
 const FirmianaTableRef = ref(null);
+
+// table表头
+const headers = [
+  {
+    align: "start",
+    key: "id",
+    title: "ID",
+    width: "100px",
+  },
+  { key: "name", title: "Name" },
+  { key: "createDate", title: "Create Date" },
+  { key: "startDate", title: "Start Date" },
+  { key: "endDate", title: "End Date" },
+  { key: "status", title: "Status" },
+  { key: "operation", title: "OPERATION", width: "300px" },
+];
+// 渲染数据
+const desserts = ref([]);
+// 原始数据
+const sourceData = ref([]);
+// loading状态
+const loading = ref(true);
+// 搜索输入
+const searchInput = ref("");
 
 const tableColumns = ref([
   {
@@ -449,6 +656,33 @@ const tableColumns = ref([
     filterData: [{ data: "" }],
   },
 ]);
+
+// 获取analysis列表
+const getAnalysisList = async () => {
+  try {
+    const response = await analysisApi.getAnalysisList(
+      projectStore.project.projectId
+    );
+    sourceData.value = response;
+    desserts.value = response;
+  } catch (error) {
+    console.error("Error fetching project list:", error);
+  } finally {
+    loading.value = false;
+  }
+};
+// 本体搜索方法
+const searchMethod = () => {
+  if (searchInput.value !== "") {
+    desserts.value = sourceData.value.filter((item) => {
+      return (
+        item.name.toUpperCase().indexOf(searchInput.value.toUpperCase()) !== -1
+      );
+    });
+  } else {
+    desserts.value = sourceData.value;
+  }
+};
 // 获取project 信息
 const getProject = async () => {
   try {
@@ -469,6 +703,21 @@ const getProject = async () => {
   } catch (error) {
     console.error("Error fetching project data:", error);
   }
+};
+// 添加新行
+const addRow = () => {
+  otherFiles.value.push({ type: "other", file: null, value: "" });
+};
+
+// 删除当前行
+const removeRow = (index) => {
+  otherFiles.value.splice(index, 1);
+};
+// 获取标签信息
+const getTagInfo = (item) => {
+  fileName.value = item.name;
+  dialog.value = true;
+  console.log("Tag Info:", item);
 };
 // 获取exp列表
 const getExp = async () => {
@@ -546,9 +795,23 @@ const onFileChange = async () => {
       basicApi.uploadTemplateFile(res);
     });
     const responses = await Promise.all(uploadPromises);
-    temp_locale.value = responses.map((r) => r.temp_locale);
+    temp_locale.value = responses.map((r) => r);
     overlayStore.openOverlay(false);
-  } catch {}
+  } catch {
+    overlayStore.openOverlay(false);
+  }
+};
+const onOtherFileChange = async (item) => {
+  try {
+    overlayStore.openOverlay(true);
+    const formData = new FormData();
+    formData.append("file", item.file);
+    const response = await basicApi.uploadTemplateFile(formData);
+    item.value = response;
+    overlayStore.openOverlay(false);
+  } catch {
+    overlayStore.openOverlay(false);
+  }
 };
 const onTemplateFileChange = async () => {
   overlayStore.openOverlay(true);
@@ -557,7 +820,7 @@ const onTemplateFileChange = async () => {
     selectedItems.value = [];
     expsList.value = [];
     const formData = new FormData();
-    formData.append("file", file.value);
+    formData.append("file", expfile.value);
     formData.append(
       "token_type",
       JSON.parse(localStorage.getItem("user")).firmianaToken.token_type
@@ -574,7 +837,9 @@ const onTemplateFileChange = async () => {
     });
     expdata.value = response;
     overlayStore.openOverlay(false);
-  } catch {}
+  } catch {
+    overlayStore.openOverlay(false);
+  }
 };
 // getMetaDataFile
 const getMetaDataFile = async () => {
@@ -615,8 +880,23 @@ const tagClose = (res) => {
     return r.expname != res;
   });
 };
+const getExpTemplate = () => {
+  window.open(
+    "https://phenomics.fudan.edu.cn/firmiana/DP/static/excel/Exps.xlsx"
+  );
+};
 // 提交信息
 const submitProject = async () => {
+  overlayStore.openOverlay(true);
+  let arr = [];
+  otherFiles.value.forEach((item) => {
+    if (item.file) {
+      arr.push({
+        type: item.type,
+        value: item.value,
+      });
+    }
+  });
   const data = {
     projectInfo: {
       iproteomeToken: JSON.parse(localStorage.getItem("user")).firmianaToken,
@@ -625,6 +905,7 @@ const submitProject = async () => {
       projectName: project.value.projectName,
       exps: expsList.value,
       metadata: temp_locale.value,
+      otherFiles: arr,
     },
   };
   const response = await projectApi.updateProject(projectId.value, data);
@@ -632,6 +913,7 @@ const submitProject = async () => {
     text: "Success",
     color: "success",
   });
+  overlayStore.openOverlay(false);
   router.push({
     path: "/project",
   });
@@ -643,6 +925,7 @@ const submitProject = async () => {
 };
 getExp();
 getProject();
+getAnalysisList();
 </script>
 
 <style lang="less" scoped>
@@ -657,6 +940,12 @@ getProject();
   }
   :deep(.v-field--disabled) {
     opacity: 1 !important;
+  }
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
   }
   .tag {
     h3 {
@@ -696,6 +985,10 @@ getProject();
     display: flex;
     align-items: top;
     gap: 10px;
+    flex-wrap: wrap;
+    .tag {
+      width: 100%;
+    }
     button {
       height: 40px !important;
     }

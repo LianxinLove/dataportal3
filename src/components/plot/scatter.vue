@@ -53,9 +53,12 @@ onBeforeUnmount(() => {
 onMounted(renderPlot);
 </script>
 
-<style scoped>
-.plotly-container {
+<style lang="less" scoped>
+:deep(.plotly) {
   min-height: 65vh;
   width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

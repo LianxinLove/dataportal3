@@ -33,7 +33,7 @@
         No nodes selected. Select a specific node.
       </h3>
     </v-main>
-    <v-main class="mt-3">
+    <v-main class="mt-3 detailContent">
       <TableComponents
         v-if="type == 'table'"
         ref="TableRef"
@@ -45,12 +45,13 @@
         :loading="tableLoading"
       >
       </TableComponents>
-      <template v-if="type == 'plot'">
-        <component
+      <template v-if="type == 'plotly'">
+        <!-- <component
           :is="currentComponent"
           v-memo="[currentComponent]"
           :data="plotData"
-        />
+        /> -->
+        <scatter :data="plotData" />
       </template>
       <template v-if="type == 'FAGL'">
         <div class="FAGLHeader">
@@ -101,9 +102,11 @@ import { useOverlayStore } from "@/stores/overlay";
 import WorkflowViewer from "@/components/WorkflowViewer/WorkflowViewer.vue";
 import TableComponents from "@/components/table/index.vue";
 import BubblePlot from "@/components/plot/bubble.vue";
+import scatter from "@/components/plot/scatter.vue";
 // plot components
 // file-saver
 import { saveAs } from "file-saver";
+import { color } from "d3";
 const router = useRouter();
 
 const analysisStore = useAnalysisStore();
@@ -126,26 +129,26 @@ const switchMe = ref(true);
 const FAGLType = ref("Plot");
 const FAGLFileName = ref("");
 
-// 定义 plotType 与组件的映射关系
-const componentMap = {
-  line: defineAsyncComponent(() => import("../../components/plot/line.vue")),
-  scatter: defineAsyncComponent(() =>
-    import("../../components/plot/scatter.vue")
-  ),
-  PQDScatter: defineAsyncComponent(() =>
-    import("../../components/plot/PQDScatter.vue")
-  ),
-  //   venn: defineAsyncComponent(() => import("../../components/plot/venn.vue")),
-  heatMap: defineAsyncComponent(() =>
-    import("../../components/plot/heatMap.vue")
-  ),
-  volcanoScatter: defineAsyncComponent(() =>
-    import("../../components/plot/volcanoScatter.vue")
-  ),
-  bubble: defineAsyncComponent(() =>
-    import("../../components/plot/bubble.vue")
-  ),
-};
+// // 定义 plotType 与组件的映射关系
+// const componentMap = {
+//   line: defineAsyncComponent(() => import("../../components/plot/line.vue")),
+//   scatter: defineAsyncComponent(() =>
+//     import("../../components/plot/scatter.vue")
+//   ),
+//   PQDScatter: defineAsyncComponent(() =>
+//     import("../../components/plot/PQDScatter.vue")
+//   ),
+//   //   venn: defineAsyncComponent(() => import("../../components/plot/venn.vue")),
+//   heatMap: defineAsyncComponent(() =>
+//     import("../../components/plot/heatMap.vue")
+//   ),
+//   volcanoScatter: defineAsyncComponent(() =>
+//     import("../../components/plot/volcanoScatter.vue")
+//   ),
+//   bubble: defineAsyncComponent(() =>
+//     import("../../components/plot/bubble.vue")
+//   ),
+// };
 const getAnalysisDetail = async () => {
   try {
     const response = await analysisApi.getAnalysisDetail(
@@ -180,9 +183,19 @@ const selectNode = async (node) => {
     try {
       const response = await analysisApi.getAnalysisTableName(node.id, form);
       fileName.value = response;
-      getTabeData().then(() => {
-        overlayStore.openOverlay(false);
-      });
+      overlayStore.openOverlay(false);
+      // getTabeData().then(() => {
+      //   overlayStore.openOverlay(false);
+      // });
+      tableColumns.value = response.result.colnames.map((col) => ({
+        value: col.value,
+        title: col.title,
+        type: "string",
+        filterData: [{ data: "" }],
+      }));
+      data.value = response.result.result;
+      type.value = "table";
+      tableLoading.value = false;
       console.log(response);
     } catch {}
   } else if (selectNodeData.value.plotType == "FAGL") {
@@ -214,39 +227,8 @@ const selectNode = async (node) => {
       0: "img",
     };
     const response = await analysisApi.getAnalisisPlotData(node.id, form);
-    plotData.value = {
-      data: [
-        {
-          type: "scatter",
-          mode: "markers",
-          x: [
-            -34.861941163365714, -34.85678173624501, -34.74294830205989,
-            -34.58028637034365, -35.20048235936119, -35.17688160088284,
-            80.12356170529699, 84.49153910702735, 79.29019160054814,
-            -34.48597088061438,
-          ],
-          y: [
-            0.29645011754042966, 0.19338779933700964, 0.38905269672075893,
-            0.21160511386791978, 0.3517630124617574, 0.2896783447933348,
-            -47.07409097117, 52.444409609536706, -7.416413982403491,
-            0.3141582593156043,
-          ],
-          marker: {
-            size: 8,
-          },
-        },
-      ],
-      layout: {
-        title: "PCA",
-        xaxis: {
-          title: "PC1",
-        },
-        yaxis: {
-          title: "PC2",
-        },
-      },
-    };
-    plotType.value = selectNodeData.value.plotType;
+    plotData.value = response.result;
+    type.value = "plotly";
     overlayStore.openOverlay(false);
   }
 };
@@ -308,17 +290,33 @@ const getTabeData = async () => {
 };
 
 const filterChange = () => {};
-const handleSortChange = () => {};
+const handleSortChange = (newSort) => {
+  const { key, value: direction } = newSort;
+
+  return data.value.sort((a, b) => {
+    // 处理空值（undefined/null 置后）
+    if (a[key] == null) return 1;
+    if (b[key] == null) return -1;
+
+    // 数字类型排序
+    if (typeof a[key] === "number" && typeof b[key] === "number") {
+      return direction === "asc" ? a[key] - b[key] : b[key] - a[key];
+    }
+
+    // 字符串类型排序
+    const compareResult = String(a[key]).localeCompare(String(b[key]));
+    return direction === "asc" ? compareResult : -compareResult;
+  });
+};
 onMounted(() => {
   getAnalysisDetail();
 });
-watch(
-  plotType,
-  (newType) => {
-    currentComponent.value = componentMap[newType];
-  },
-  { immediate: true }
-);
+watch();
+// plotType,
+// (newType) => {
+//   currentComponent.value = componentMap[newType];
+// },
+// { immediate: true }
 </script>
 
 <style lang="less" scoped>
@@ -352,6 +350,8 @@ watch(
     display: flex;
     align-items: center;
   }
+}
+.detailContent {
 }
 /* Add your custom styles here if needed */
 </style>

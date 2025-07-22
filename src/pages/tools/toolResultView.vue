@@ -52,7 +52,11 @@
               v-if="plotDataShow && plotData.type == 'plotly'"
               :data="plotData"
             />
-            <img v-if="plotDataShow && plotData.type == 'img'" :src="'data:image/png;base64,' + plotData.data" height="100%">
+            <img
+              v-if="plotDataShow && plotData.type == 'img'"
+              :src="'data:image/png;base64,' + plotData.data"
+              height="100%"
+            />
           </v-card>
         </v-col>
       </v-row>
@@ -116,9 +120,9 @@ const componentMap = {
 
 const submit = async (data) => {
   // 提交表单数据
-  overlayStore.openOverlay(true);
 
   try {
+    overlayStore.openOverlay(true);
     const response = await toolsApi.updateTemplateWorkflow(toolStore.tool.id, {
       name: formName.value.name,
       inputs: parameters.value.inputs,
@@ -134,6 +138,7 @@ const submit = async (data) => {
     // });
     overlayStore.openOverlay(false);
   } catch (error) {
+    overlayStore.openOverlay(false);
     console.error("提交失败:", error);
   }
   console.log("提交的数据:", data);
@@ -190,7 +195,24 @@ const getTabeData = async () => {
 };
 
 const filterChange = () => {};
-const handleSortChange = () => {};
+const handleSortChange = (newSort) => {
+  const { key, value: direction } = newSort;
+
+  return data.value.sort((a, b) => {
+    // 处理空值（undefined/null 置后）
+    if (a[key] == null) return 1;
+    if (b[key] == null) return -1;
+
+    // 数字类型排序
+    if (typeof a[key] === "number" && typeof b[key] === "number") {
+      return direction === "asc" ? a[key] - b[key] : b[key] - a[key];
+    }
+
+    // 字符串类型排序
+    const compareResult = String(a[key]).localeCompare(String(b[key]));
+    return direction === "asc" ? compareResult : -compareResult;
+  });
+};
 onMounted(() => {
   getToolResult();
 });
