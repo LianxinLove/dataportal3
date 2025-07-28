@@ -377,34 +377,6 @@ const uploading = ref(false);
 const progress = ref(0);
 const folderData = ref();
 
-const d = {
-  subplots: [
-    {
-      name: "INPUT",
-      onChange: "updateVisibleTools",
-      options: [
-        {
-          label: "Project",
-          value: "project",
-        },
-        {
-          label: "File",
-          value: ["fileinfo"],
-        },
-      ],
-      type: "select",
-      value: "project",
-      children: [
-        {
-          file: "symbol.tsv",
-          name: "fileinfo",
-          type: "upload_files",
-        },
-      ],
-    },
-  ],
-};
-
 const tableColumns = ref([
   { title: "Name", value: "name", type: "string", filterData: [{ data: "" }] },
   {
