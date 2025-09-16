@@ -1,6 +1,5 @@
 // src/api/index.js
 import http from "@/utils/https.js";
-import { get } from "lodash";
 
 // 用户相关API
 export const userApi = {

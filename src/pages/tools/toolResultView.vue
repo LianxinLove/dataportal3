@@ -48,10 +48,18 @@
               :loading="tableLoading"
             >
             </TableComponents>
-            <scatter
+            <v-tabs
+              v-model="tab"
+              bg-color="primary"
               v-if="plotDataShow && plotData.type == 'plotly'"
-              :data="plotData"
-            />
+            >
+              <template v-for="(item, i) in plotData" :key="i">
+                <v-tab :value="item.type">
+                  <scatter :data="item.plotData" />
+                </v-tab>
+              </template>
+            </v-tabs>
+
             <img
               v-if="plotDataShow && plotData.type == 'img'"
               :src="'data:image/png;base64,' + plotData.data"
@@ -69,7 +77,6 @@ import { ref, onMounted, defineAsyncComponent, shallowRef } from "vue";
 import { useRouter } from "vue-router";
 import { analysisApi, projectApi, toolsApi } from "@/api";
 import { useSnackbarStore } from "@/stores/snackbar.js";
-const snackbar = useSnackbarStore();
 
 import { useToolStore } from "@/stores/tools";
 import { useOverlayStore } from "@/stores/overlay";
@@ -82,6 +89,7 @@ const router = useRouter();
 
 const toolStore = useToolStore();
 const overlayStore = useOverlayStore();
+const snackbar = useSnackbarStore();
 
 const selectNodeData = ref({});
 const TableRef = ref(null);
@@ -99,23 +107,23 @@ const formName = ref({ name: "" });
 
 // 定义 plotType 与组件的映射关系
 const componentMap = {
-  line: defineAsyncComponent(() => import("../../components/plot/line.vue")),
-  scatter: defineAsyncComponent(() =>
-    import("../../components/plot/scatter.vue")
-  ),
-  PQDScatter: defineAsyncComponent(() =>
-    import("../../components/plot/PQDScatter.vue")
-  ),
-  //   venn: defineAsyncComponent(() => import("../../components/plot/venn.vue")),
-  heatMap: defineAsyncComponent(() =>
-    import("../../components/plot/heatMap.vue")
-  ),
-  volcanoScatter: defineAsyncComponent(() =>
-    import("../../components/plot/volcanoScatter.vue")
-  ),
-  bubble: defineAsyncComponent(() =>
-    import("../../components/plot/bubble.vue")
-  ),
+  // line: defineAsyncComponent(() => import("../../components/plot/line.vue")),
+  // scatter: defineAsyncComponent(() =>
+  //   import("../../components/plot/scatter.vue")
+  // ),
+  // PQDScatter: defineAsyncComponent(() =>
+  //   import("../../components/plot/PQDScatter.vue")
+  // ),
+  // //   venn: defineAsyncComponent(() => import("../../components/plot/venn.vue")),
+  // heatMap: defineAsyncComponent(() =>
+  //   import("../../components/plot/heatMap.vue")
+  // ),
+  // volcanoScatter: defineAsyncComponent(() =>
+  //   import("../../components/plot/volcanoScatter.vue")
+  // ),
+  // bubble: defineAsyncComponent(() =>
+  //   import("../../components/plot/bubble.vue")
+  // ),
 };
 
 const submit = async (data) => {

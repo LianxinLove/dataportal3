@@ -24,7 +24,7 @@ service.interceptors.request.use(
     if (localStorage.getItem("user") == null) {
       // ★★★ 关键修改 1: 抛出特定错误而不是直接路由跳转 ★★★
       import("@/router").then((routerModule) => {
-        routerModule.default.push("/login");
+        // routerModule.default.push("/login");
       });
 
       const error = new Error("未登录");
